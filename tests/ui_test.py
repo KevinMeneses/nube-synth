@@ -32,6 +32,22 @@ click(*LFO1_NOTE); check("LFO 1 reinicio con cada nota", param(49), "Con cada no
 menu(PRESETS, PRESETS_M, 1, 0)
 check("menu Presets -> Bajos -> 808 con glide", (param(5), param(1), num(param(3))), ("Seno", "Legato", 70.0))
 time.sleep(0.5); shot(f"{OUT}/ui_synth_808.png")
+# 1.1: página MOD y controles nuevos
+click(*ONESHOT_BTN); check("boton One-shot (VOZ)", param(98), "One-shot")
+click(*CURVE_AMP); check("boton Curva (AMP) -> RS5k", param(94), "RS5k (dB)")
+focus(); cc(f"m:{pt(*AMP_VEL)}"); wheel(3); check("en RS5k la perilla Velocidad mueve la vel. minima", num(param(95)), lambda v: v > -72)
+x, y = GAIN; drag(x, y, x, y - 40); check("arrastrar Ganancia la sube", num(param(99)), lambda v: v > 0)
+click(*PAGE_MOD); time.sleep(0.4)
+menu(MOD_SRC(0), MOD_SRC_M(0), 2); check("matriz 1: fuente -> Env 3", param(73), "Env 3")
+menu(MOD_DST(0), MOD_DST_M(0), 3); check("matriz 1: destino -> Nivel osc 1", param(74), "Nivel osc 1")
+x, y = MOD_AMT(0); drag(x, y, x, y - 40); check("arrastrar la cantidad de la ranura 1 la sube", num(param(75)), lambda v: v > 5)
+menu(MOD_SRC(4), MOD_SRC_M(4), 7); check("matriz 5: fuente -> Rueda", param(85), "Rueda")
+menu(MOD_DST(4), MOD_DST_M(4), 6); check("matriz 5: destino -> Paneo", param(86), "Paneo")
+focus(); cc(f"m:{pt(*E3_A)}"); a0 = num(param(69)); wheel(3); check("rueda sobre Env 3 ataque lo sube", num(param(69)), lambda v: v > a0)
+click(*CURVE_MOD); check("boton Curva (pagina MOD) -> Nube", param(94), "Nube")
+time.sleep(0.5); shot(f"{OUT}/ui_synth_mod.png")
+x, y = MOD_AMT(0); dclick(x, y); check("doble clic en la cantidad = 0", num(param(75)), 0.0)
+click(*PAGE_SINTE)
 lua("ui_stop.lua")
 for _ in range(12):
     if num(param(68)) == 0: break

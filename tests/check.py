@@ -17,6 +17,12 @@ def tones(x, fs, t0, t1):
     s = seg(x, t0, t1); tt = np.arange(int(t0 * SR), int(t0 * SR) + len(s)) / SR
     M = np.concatenate([np.stack([np.sin(2 * np.pi * f * tt), np.cos(2 * np.pi * f * tt)], 1) for f in fs], 1)
     c, *_ = np.linalg.lstsq(M, s, rcond=None); return [db(np.hypot(c[2 * i], c[2 * i + 1])) for i in range(len(fs))]
+def tones_lin(x, fs, t0, t1):
+    """amplitudes (dB) al centro de la ventana, ajustando todas las componentes juntas y cada una con amplitud que
+    varía lineal en la ventana (para envolventes que cambian rápido: sin esto la variación se filtra a otras frecuencias)"""
+    s = seg(x, t0, t1); tt = np.arange(int(t0 * SR), int(t0 * SR) + len(s)) / SR; u = tt - tt.mean()
+    M = np.concatenate([np.stack([np.sin(2 * np.pi * f * tt), np.cos(2 * np.pi * f * tt), u * np.sin(2 * np.pi * f * tt), u * np.cos(2 * np.pi * f * tt)], 1) for f in fs], 1)
+    c, *_ = np.linalg.lstsq(M, s, rcond=None); return [db(np.hypot(c[4 * i], c[4 * i + 1])) for i in range(len(fs))]
 def freq(x, t0, t1):
     """frecuencia por cruces por cero (interpolados)"""
     s = seg(x, t0, t1); i = np.where((s[:-1] < 0) & (s[1:] >= 0))[0]
@@ -224,6 +230,80 @@ x = load("onset")[:, 0]
 scalar("la nota empieza a la muestra exacta (0.5 s)", np.argmax(np.abs(x) > 1e-7), 24000, 0)
 x = load("stress")
 inrange("estres (24 notas, 8 voces): pico dBFS", db(np.abs(x).max()), -40, 6)
+
+print("--- 1.1: env 3 y matriz de modulacion")
+x = load("e3_rhodes")[:, 0]
+for t, want in ((0.12, 0.2), (0.15, 0.5), (0.18, 0.8)):
+    l1, l2 = tones_lin(x, [440, 880], t - 0.005, t + 0.005)
+    scalar(f"Env 3 a nivel osc 1 (ataque 100 ms): a los {(t - 0.1) * 1000:.0f} ms = {want:.0%}", 10 ** ((l1 - db(A0)) / 20), want, 0.01)
+    scalar(f"osc 2 sin env 3 (el golpe): completo a los {(t - 0.1) * 1000:.0f} ms (dB)", l2, db(A0), 0.05)
+scalar("Env 3 a nivel osc 1: a los 200 ms = 100 % (dB)", tone(x, 440, 0.3, 0.5), db(A0), 0.05)
+scalar("Rueda a tono 25 % (= +12 st) con CC1 127 (Hz)", freq(load("mx_wheel_pitch")[:, 0], 0.3, 1.5), 880, 0.03)
+x = load("mx_cut")[:, 0]; errs = []
+for k in (2, 5, 9, 14, 18, 22, 36, 73):
+    want = db(resp(k * F1, 1000, "lp24"))
+    if want > -60: errs.append(tone(x, k * F1, 0.5, 1.5) - tone(ref, k * F1, 0.5, 1.5) - want)
+scalar("Env 3 a corte 12.5 % (= +1 oct): LP24 en 1 kHz (dB)", max(errs, key=abs), 0, 0.15)
+x = load("mx_velfm")[:, 0]
+for t0, ix, nm in ((0.3, 1.0, "vel 127, indice 1"), (1.1, 64 / 127, "vel 64, indice 64/127")):
+    c = tone(x, 440, t0, t0 + 0.3)
+    scalar(f"Velocidad a FM (matriz) {nm}: J1/J0", tone(x, 440 + fm, t0, t0 + 0.3) - c, db(special.jv(1, ix) / special.jv(0, ix)), 0.1)
+x = load("mx_pan")
+scalar("Teclado a paneo: C4 al centro (L - R, dB)", tone(x[:, 0], mtof(60), 0.3, 0.6) - tone(x[:, 1], mtof(60), 0.3, 0.6), 0, 0.01)
+scalar("Teclado a paneo 100 %: C6 = +0.5 (L - R, dB)", tone(x[:, 0], mtof(84), 1.1, 1.4) - tone(x[:, 1], mtof(84), 1.1, 1.4), db(np.cos(3 * np.pi / 8) / np.sin(3 * np.pi / 8)), 0.02)
+x = load("mx_pw")[:, 0]; h1 = tone(x, f0, 0.3, 1.5)
+scalar("Rueda a ancho de pulso (50 -> 75 %): armonico 2", tone(x, 2 * f0, 0.3, 1.5) - h1, db(0.5 / np.sin(np.pi / 4)), 0.1)
+inrange("ancho de pulso 75 %: sin armonico 4", tone(x, 4 * f0, 0.3, 1.5) - h1, -300, -50)
+x = load("mx_o2")[:, 0]
+scalar("Velocidad a tono osc 2 25 %: vel 127 = +12 st (Hz)", freq(x, 0.3, 0.6), 880, 0.03)
+scalar("Velocidad a tono osc 2: vel 64 = +12 x 64/127 st (Hz)", freq(x, 1.1, 1.4), 440 * 2 ** (64 / 127), 0.03)
+scalar("Env 3 a volumen -100 %, sostenido 50 %: nivel a la mitad", tone(load("mx_volneg")[:, 0], 440, 0.5, 1.5), db(A0 / 2), 0.05)
+x = load("mx_lfovol")[:, 0]; e = env(x)
+scalar("LFO 1 a volumen (matriz) 4 Hz: frecuencia", env_peak_hz(x), 4, 0.1)
+scalar("LFO 1 a volumen (matriz): maximo = nivel completo", db(seg(e, 0.3, 1.5).max() / A0), 0, 0.2)
+inrange("LFO 1 a volumen (matriz) 100 %: profundidad (dB)", db(seg(e, 0.3, 1.5).max() / seg(e, 0.3, 1.5).min()), 30, 400)
+a, b = load("mx_kt36")[:, 0], load("mx_kt48")[:, 0]
+ha = tones(a, [k * fa for k in range(1, 31)], 0.5, 1.5); hb = tones(b, [k * fb_ for k in range(1, 31)], 0.5, 1.5)
+d = [(ha[k - 1] - ha[0]) - (hb[k - 1] - hb[0]) for k in range(2, 13) if db(resp(k * fa, 125, "lp24") / k) > -60]
+scalar("Teclado a corte 50 % (1 oct/oct): mismo timbre", max(d, key=abs), 0, 0.3)
+x = load("indep")[:, 0]; fm2 = mtof(76)
+c, sb = tones_lin(x, [440, 440 + fm2], 0.1, 0.11)
+inrange("Env 2 (50 ms) a FM: golpe con bandas al inicio (dB)", sb - c, -25, 0)
+c, sb = tones_lin(x, [440, 440 + fm2], 0.29, 0.31)
+inrange("Env 2 a FM: a los 200 ms ya no hay bandas (dB)", sb - c, -300, -50)
+e3 = 0.01 ** ((0.3 - 0.0005) / 1.0); fc3 = 200 * 2 ** (4 * e3)
+print(f"    env 3 (1 s) a corte: a los 300 ms el corte va en {fc3:.0f} Hz")
+scalar("Env 3 (1 s) a corte: a los 300 ms sigue abierto (dB)", tones_lin(x, [440], 0.39, 0.41)[0], db(A0 * resp(440, fc3, "lp24")), 0.3)
+
+print("--- 1.1: teclado, one-shot, velocidad, ganancia")
+x = load("kte")[:, 0]; e = env(x)
+scalar("Teclado a tiempos 100 %: C5 ataque 100 -> 50 ms (25 ms = 50 %)", e[int(0.125 * SR)] / A0, 0.5, 0.02)
+scalar("Teclado a tiempos: C5 relajacion 400 -> 200 ms (-40 dB)", db(e[int(0.8 * SR)] / A0), -40, 1.0)
+scalar("Teclado a tiempos: C4 sin cambio (50 ms = 50 %)", e[int(1.05 * SR)] / A0, 0.5, 0.02)
+scalar("Teclado a tiempos: C4 relajacion 400 ms (-40 dB)", db(e[int(1.9 * SR)] / A0), -40, 1.0)
+x = load("kvol")[:, 0]
+for t0, n, want in ((0.2, 48, 6), (0.7, 60, 0), (1.2, 72, -6)):
+    scalar(f"Teclado a volumen -6 dB/oct: nota {n}", tone(x, mtof(n), t0, t0 + 0.25) - db(A0), want, 0.02)
+a, b, c = load("os_short"), load("os_long"), load("os_normal"); e = env(a[:, 0])
+scalar("one-shot: nota corta = nota larga (dif. max)", np.abs(a - b).max(), 0, 0)
+scalar("one-shot: al terminar el decaimiento (S 50 %)", e[int(0.3005 * SR)] / A0, 0.505, 0.02)
+scalar("one-shot: luego se relaja sola (-40 dB a los 300 ms)", db(e[int(0.6005 * SR)] / A0), db(0.505 * 0.01), 1.0)
+inrange("modo normal: la misma nota corta ya se solto (dB)", rms(c[:, 0], 0.3, 0.35) - rms(a[:, 0], 0.3, 0.35), -300, -15)
+m24 = 10 ** (-24 / 20); x = load("vel_rs5k")[:, 0]
+for t0, v in ((0.15, 127), (0.55, 64), (0.95, 1)):
+    scalar(f"curva RS5k, -24 dB: vel {v}", tone(x, 440, t0, t0 + 0.2) - db(A0), db(m24 + (1 - m24) * (v - 1) / 126), 0.02)
+x = load("vel_rs5k_inf")[:, 0]
+for t0, v in ((0.55, 64), (0.95, 2)):
+    scalar(f"curva RS5k, -inf: vel {v}", tone(x, 440, t0, t0 + 0.2) - db(A0), db((v - 1) / 126), 0.02)
+for case, nm in (("vel_env2", "Velocidad a env 2 (env 2 a tono +12)"), ("vel_env3", "Velocidad a env 3 (env 3 a tono +12)")):
+    x = load(case)[:, 0]
+    scalar(f"{nm}: vel 127 (Hz)", freq(x, 0.3, 0.6), 440, 0.03)
+    scalar(f"{nm}: vel 64 = +12 x 64/127 st (Hz)", freq(x, 1.1, 1.4), 220 * 2 ** (64 / 127), 0.03)
+x = load("vel_fm")[:, 0]
+for t0, ix, nm in ((0.3, 1.0, "vel 127"), (1.1, 64 / 127, "vel 64")):
+    c = tone(x, 440, t0, t0 + 0.3)
+    scalar(f"Velocidad a FM 100 %: {nm}, J1/J0", tone(x, 440 + fm, t0, t0 + 0.3) - c, db(special.jv(1, ix) / special.jv(0, ix)), 0.1)
+scalar("ganancia de salida +6 dB", tone(load("gain")[:, 0], 440, 0.3, 1.5), db(A0) + 6, 0.02)
 
 print("--- presets (frase de bajo + acorde + dos notas pisadas)")
 names = [l.split("{-,", 1)[1].split("}", 1)[0].split(",") for l in (pathlib.Path(__file__).parent.parent / "nube_synth.jsfx").read_text().splitlines() if "Cargar preset" in l][0]

@@ -3,9 +3,10 @@
 -- Para correr solo algunos casos: patrones Lua separados por espacios en tests/out/only.txt (REAPER no ve las variables de la terminal).
 local ROOT = debug.getinfo(1, "S").source:match("^@(.*)/[^/]*$")
 local OUT = ROOT .. "/out"
-local FX = "JS:Nube Synth/nube_synth.jsfx"
 local P = dofile(ROOT .. "/params_gen.lua")
+local TAB = dofile(ROOT .. "/tab.lua")
 os.execute('mkdir -p "' .. OUT .. '"')
+local FX = TAB.fx(OUT)
 local logf = io.open(OUT .. "/log.txt", "w")
 local function log(...) local t = {} for _, v in ipairs({...}) do t[#t+1] = tostring(v) end logf:write(table.concat(t, " "), "\n") logf:flush() end
 local of = io.open(OUT .. "/only.txt"); local only = of and of:read("l") or nil; if of then of:close() end
@@ -89,18 +90,58 @@ local CASES = {
   {"vol",        A4, with(B, {[66] = -6}), 2},
   {"onset",      {N(0.5, 1.0, 69)}, with(B, {[9] = 0, [23] = 100}), 1.2},
   {"stress",     {}, with(SAW, {[11] = 3, [37] = 2000, [19] = 3, [17] = 50, [59] = 50, [61] = 30, [64] = 30}), 3},
+  -- 1.1 (sliders 69+): env 3 69-72, matriz k = 73+3(k-1) fuente / +1 destino / +2 cantidad, 91-93 velocidad a env 2/env 3/FM,
+  -- 94-95 curva de velocidad, 96-97 teclado a tiempos/volumen, 98 disparo, 99 ganancia
+  {"e3_rhodes",  A4, with(B, {[13] = 0, [14] = 1, [17] = 100, [69] = 100, [71] = 100, [73] = 2, [74] = 3, [75] = 100}), 2},
+  {"mx_wheel_pitch", A4, with(B, {[56] = 0, [73] = 7, [74] = 0, [75] = 25}), 2, {{0.05, 0xB0, 1, 127}}},
+  {"mx_cut",     {N(0.1, 1.6, 33)}, with(FLT, {[27] = 0, [28] = 500, [69] = 0.5, [71] = 100, [73] = 2, [74] = 1, [75] = 12.5}), 2},
+  {"mx_velfm",   {N(0.1, 0.7, 69, 127), N(0.9, 1.5, 69, 64)}, with(B, {[13] = 0, [15] = 7, [73] = 5, [74] = 2, [75] = 20}), 1.7},
+  {"mx_pan",     {N(0.1, 0.7, 60), N(0.9, 1.5, 84)}, with(B, {[73] = 6, [74] = 6, [75] = 100}), 1.7},
+  {"mx_pw",      {N(0.1, 1.6, 45)}, with(B, {[5] = 3, [56] = 0, [73] = 7, [74] = 5, [75] = 55.5556}), 2, {{0.05, 0xB0, 1, 127}}},
+  {"mx_o2",      {N(0.1, 0.7, 69, 127), N(0.9, 1.5, 69, 64)}, with(B, {[9] = 0, [13] = 0, [17] = 100, [73] = 5, [74] = 8, [75] = 25}), 1.7},
+  {"mx_volneg",  A4, with(B, {[69] = 0.5, [70] = 1, [71] = 50, [73] = 2, [74] = 7, [75] = -100}), 2},
+  {"mx_lfovol",  A4, with(B, {[45] = 4, [73] = 3, [74] = 7, [75] = 100}), 2},
+  {"mx_kt36",    {N(0.1, 1.6, 36)}, with(FLT, {[27] = 0, [28] = 500, [73] = 6, [74] = 1, [75] = 50}), 2},
+  {"mx_kt48",    {N(0.1, 1.6, 48)}, with(FLT, {[27] = 0, [28] = 500, [73] = 6, [74] = 1, [75] = 50}), 2},
+  {"indep",      {N(0.1, 1.0, 69)}, with(B, {[13] = 0, [15] = 7, [25] = 20, [39] = 0.5, [40] = 50, [41] = 0, [27] = 0, [28] = 200,
+                                             [69] = 0.5, [70] = 1000, [71] = 0, [73] = 2, [74] = 1, [75] = 50}), 1.2},
+  {"kte",        {N(0.1, 0.6, 72), N(1.0, 1.5, 60)}, with(B, {[34] = 100, [37] = 400, [96] = 100}), 2.2},
+  {"kvol",       {N(0.1, 0.5, 48), N(0.6, 1.0, 60), N(1.1, 1.5, 72)}, with(B, {[97] = -6}), 1.7},
+  {"os_short",   {N(0.1, 0.15, 69)}, with(B, {[34] = 0.5, [35] = 200, [36] = 50, [37] = 300, [98] = 1}), 1.6},
+  {"os_long",    {N(0.1, 1.5, 69)}, with(B, {[34] = 0.5, [35] = 200, [36] = 50, [37] = 300, [98] = 1}), 1.6},
+  {"os_normal",  {N(0.1, 0.15, 69)}, with(B, {[34] = 0.5, [35] = 200, [36] = 50, [37] = 300}), 1.6},
+  {"vel_rs5k",   {N(0.1, 0.4, 69, 127), N(0.5, 0.8, 69, 64), N(0.9, 1.2, 69, 1)}, with(B, {[94] = 1, [95] = -24}), 1.4},
+  {"vel_rs5k_inf", {N(0.1, 0.4, 69, 127), N(0.5, 0.8, 69, 64), N(0.9, 1.2, 69, 2)}, with(B, {[94] = 1, [95] = -72}), 1.4},
+  {"vel_env2",   {N(0.1, 0.7, 57, 127), N(0.9, 1.5, 57, 64)}, with(B, {[39] = 0.5, [40] = 20000, [41] = 100, [43] = 12, [91] = 100}), 1.7},
+  {"vel_env3",   {N(0.1, 0.7, 57, 127), N(0.9, 1.5, 57, 64)}, with(B, {[69] = 0.5, [71] = 100, [73] = 2, [74] = 0, [75] = 25, [92] = 100}), 1.7},
+  {"vel_fm",     {N(0.1, 0.7, 69, 127), N(0.9, 1.5, 69, 64)}, with(B, {[13] = 0, [15] = 7, [24] = 20, [93] = 100}), 1.7},
+  {"gain",       A4, with(B, {[99] = 6}), 2},
 }
-for k = 0, 23 do table.insert(CASES[#CASES][2], N(0.05 + k * 0.06, 0.05 + k * 0.06 + 0.3, 48 + (k * 7) % 24)) end
+for _, c in ipairs(CASES) do if c[1] == "stress" then for k = 0, 23 do table.insert(c[2], N(0.05 + k * 0.06, 0.05 + k * 0.06 + 0.3, 48 + (k * 7) % 24)) end end end
 -- cada preset con una frase: bajo, acorde, y dos notas pisadas (glide en los modos mono)
 local PHRASE = {N(0.0, 0.6, 45, 100), N(0.7, 1.7, 57, 100), N(0.7, 1.7, 60, 100), N(0.7, 1.7, 64, 100), N(1.8, 2.25, 69, 100), N(2.2, 2.7, 72, 100)}
 local LONG = {N(0.0, 4.0, 60, 100)}   -- el riser necesita una nota larga
 for p = 1, P.NPRESETS do CASES[#CASES + 1] = {"preset" .. p, p == 21 and LONG or PHRASE, {[P.PRESET] = p}, 5} end
+-- compatibilidad: los parches de Nube Synth de la mezcla "Nube baja" (sliders 1-66 tal como están guardados en el proyecto)
+local NB = {
+  nb_808 = "1 8 0 2 0 0 0 0 100 50 1 25 2 0 0 7 0 50 1 25 0 0 0 0 0 70 4 6000 0 0 0 0 0 1 4000 0 30 0 0.5 60 0 300 2 0 5 0 0 0 0 1 0.5 0 1 0 0 40 0 42 0 0.6 0 3 35 0 2 7.5",
+  nb_coro = "0 8 0 4 2 0 0 0 70 50 5 15 2 0 0 7 50 50 1 25 14 0 0 0 0 70 1 5000 10 0 0 0 0 600 1000 90 700 55 1 400 0 300 0 0 5 0 0 0 0 1 0.5 0 1 0 0 40 0 8.5 25 0.6 0 3 35 0 2 -7.6",
+  nb_silbido1 = "0 8 0 2 0 0 0 0 100 50 1 25 2 0 0 7 0 50 1 25 0 0 10 0 0 70 1 6000 0 0 0 0 0 150 400 100 180 45 1 400 0 300 0 0 5.5 0 0 1.5 0 1 0.5 0 1 0 0 40 0 0 100 0.8 0 3 35 0 2 3.7",
+  nb_silbido2 = "0 8 0 2 0 0 0 0 100 50 1 25 2 0 0 7 0 50 1 25 0 0 10 0 0 70 1 6000 0 0 0 0 0 1.2 7 63.5 95 0 0.7 625 99 1 0 0 5.5 0 0 1.5 0 1 0.5 0 1 0 0 40 0 52.5 0 0.6 0 3 35 0 2 -9.8",
+  nb_kalimba = "0 8 0 2 0 0 0 0 100 50 1 25 0 1 0 0 18 50 1 25 0 0 0 14 31 0 1 696 0 0 36 0 0 0.5 1458 0 4119 45 0.5 571 0 300 0 0 5 0 0 0 0 1 0.5 0 1 0 0 40 0 0 0 0.6 0 3 35 0 2 6",
+}
+local NBPH = {N(0.0, 0.6, 45, 100), N(0.7, 1.7, 57, 70), N(0.7, 1.7, 60, 90), N(0.7, 1.7, 64, 110), N(1.8, 2.25, 69, 127), N(2.2, 2.7, 72, 50), N(2.8, 3.0, 80, 100)}
+for _, k in ipairs({"nb_808", "nb_coro", "nb_silbido1", "nb_silbido2", "nb_kalimba"}) do
+  local prm, i = {}, 1
+  for w in NB[k]:gmatch("%S+") do prm[i] = tonumber(w); i = i + 1 end
+  CASES[#CASES + 1] = {k, NBPH, prm, 5}
+end
 
-reaper.Main_OnCommand(40859, 0) -- nueva pestaña
-reaper.GetSetProjectInfo(0, "PROJECT_SRATE", 48000, true)
-reaper.GetSetProjectInfo(0, "PROJECT_SRATE_USE", 1, true)
-reaper.SetCurrentBPM(0, 120, false)
-reaper.InsertTrackAtIndex(0, false); local tr = reaper.GetTrack(0, 0)
+local PROJ = TAB.open(OUT, "nube_synth_render")
+reaper.GetSetProjectInfo(PROJ, "PROJECT_SRATE", 48000, true)
+reaper.GetSetProjectInfo(PROJ, "PROJECT_SRATE_USE", 1, true)
+reaper.SetCurrentBPM(PROJ, 120, false)
+reaper.InsertTrackAtIndex(0, false); local tr = reaper.GetTrack(PROJ, 0)
 
 for _, c in ipairs(CASES) do
   local name, notes, params, len, ccs = c[1], c[2], c[3], c[4], c[5] or {}
@@ -130,21 +171,19 @@ for _, c in ipairs(CASES) do
     end
     local file = OUT .. "/" .. name .. ".wav"
     os.remove(file)
-    reaper.GetSetProjectInfo(0, "RENDER_SETTINGS", 0, true)
-    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 1, true)
-    reaper.GetSetProjectInfo(0, "RENDER_SRATE", 48000, true)
-    reaper.GetSetProjectInfo(0, "RENDER_CHANNELS", 2, true)
-    reaper.GetSetProjectInfo(0, "RENDER_TAILFLAG", 0, true)
-    reaper.GetSetProjectInfo_String(0, "RENDER_FILE", OUT, true)
-    reaper.GetSetProjectInfo_String(0, "RENDER_PATTERN", name, true)
-    reaper.Main_OnCommand(42230, 0)
+    reaper.GetSetProjectInfo(PROJ, "RENDER_SETTINGS", 0, true)
+    reaper.GetSetProjectInfo(PROJ, "RENDER_BOUNDSFLAG", 1, true)
+    reaper.GetSetProjectInfo(PROJ, "RENDER_SRATE", 48000, true)
+    reaper.GetSetProjectInfo(PROJ, "RENDER_CHANNELS", 2, true)
+    reaper.GetSetProjectInfo(PROJ, "RENDER_TAILFLAG", 0, true)
+    reaper.GetSetProjectInfo_String(PROJ, "RENDER_FILE", OUT, true)
+    reaper.GetSetProjectInfo_String(PROJ, "RENDER_PATTERN", name, true)
+    reaper.SelectProjectInstance(PROJ); reaper.Main_OnCommand(42230, 0)
     local vals = {}
     for _, k in ipairs({1, 5, 9, 27, 28, 34, 66}) do local _, v = reaper.TrackFX_GetFormattedParamValue(tr, fx, k - 1, ""); vals[#vals + 1] = v end
     log("caso", name, table.concat(vals, " | "))
   end
 end
-reaper.Main_SaveProjectEx(0, OUT .. "/_tmp_test.rpp", 0)
-reaper.Main_openProject("noprompt:" .. OUT .. "/_tmp_test.rpp")
-reaper.Main_OnCommand(40860, 0) -- cerrar pestaña
+TAB.close()
 log("done")
 logf:close()
