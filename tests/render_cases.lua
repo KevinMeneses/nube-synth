@@ -1,7 +1,7 @@
 -- Carga Nube Synth en una pestaña nueva, renderiza cada caso (item MIDI) y cierra la pestaña.
 -- Uso: REAPER -nonewinst tests/render_cases.lua   (escribe tests/out/*.wav y tests/out/log.txt)
 -- Para correr solo algunos casos: patrones Lua separados por espacios en tests/out/only.txt (REAPER no ve las variables de la terminal).
-local ROOT = os.getenv("HOME") .. "/Music/NubeSynth/tests"
+local ROOT = debug.getinfo(1, "S").source:match("^@(.*)/[^/]*$")
 local OUT = ROOT .. "/out"
 local FX = "JS:Nube Synth/nube_synth.jsfx"
 local P = dofile(ROOT .. "/params_gen.lua")

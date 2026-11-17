@@ -1,6 +1,6 @@
 -- Abre una pestaña de demo: pista con un acorde en loop (fader en -inf, no suena), Nube Synth con un preset,
 -- ventana del FX flotante y reproducción en loop para ver las gráficas. Cerrar con tests/ui_close.lua.
-local ROOT = os.getenv("HOME") .. "/Music/NubeSynth/tests"
+local ROOT = debug.getinfo(1, "S").source:match("^@(.*)/[^/]*$")
 -- opciones (REAPER no ve las variables de la terminal): tests/out/demo_opts.txt = "preset"
 local o = io.open(ROOT .. "/out/demo_opts.txt"); local OPTS = {}
 if o then for w in o:read("a"):gmatch("%S+") do OPTS[#OPTS + 1] = tonumber(w) end o:close() end

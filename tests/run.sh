@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Renderiza los casos en REAPER (pestaña temporal) y verifica contra la teoría. Uso: tests/run.sh [patrones de casos...]
 cd "$(dirname "$0")/.."
-PY=${NUBE_PY:-$HOME/Music/ClaudeBeats/.venv/bin/python}
+PY=${NUBE_PY:-python3}   # necesita numpy, scipy y soundfile
 python3 tools/build.py >/dev/null || exit 1
 mkdir -p tests/out; echo "$*" > tests/out/only.txt
 rm -f tests/out/log.txt

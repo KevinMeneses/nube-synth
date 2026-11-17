@@ -1,5 +1,5 @@
 -- CPU: render de 30 s con un acorde de 8 notas sostenido (casos: sierra simple, preset Pad Nube, peor caso).
-local OUT = os.getenv("HOME") .. "/Music/NubeSynth/tests/out"
+local OUT = debug.getinfo(1, "S").source:match("^@(.*)/[^/]*$") .. "/out"
 local FX = "JS:Nube Synth/nube_synth.jsfx"
 os.execute('mkdir -p "' .. OUT .. '"')
 local f = io.open(OUT .. "/perf.txt", "w")

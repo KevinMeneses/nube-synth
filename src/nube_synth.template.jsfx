@@ -1,6 +1,7 @@
 desc:Nube Synth - sintetizador (2 osc con unisono, sub, ruido, FM, filtro, 2 env, 2 LFO, glide, FX)
 //tags: synth instrument polysynth subtractive supersaw 808 pad pluck lead fm
-//author: Kev Meneses + Claude
+//author: Kev Meneses + Claude (Claude Code)
+//license: GPL-3.0-or-later
 //version: 1.0.0
 
 //@GEN:SLIDERS@
