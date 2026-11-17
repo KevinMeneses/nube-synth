@@ -83,6 +83,35 @@ SPEC = [
 N = len(SPEC)
 PRESET_SLIDER, READOUT_SLIDER = N + 1, N + 2
 
+# 1.1: todo lo nuevo va DESPUÉS de los sliders 67 (Cargar preset) y 68 (lectura), para que los proyectos de la 1.0
+# abran igual (los valores que faltan toman su defecto, y los defectos no cambian el sonido).
+MSRC = "Apagado,Env 2,Env 3,LFO 1,LFO 2,Velocidad,Teclado,Rueda"
+MDST = "Tono,Corte,FM,Nivel osc 1,Nivel osc 2,Ancho de pulso,Paneo,Volumen,Tono osc 2"
+SPEC2 = [
+    ("Env 3 ataque (ms)", 1, 0.5, 10000, 0.1, 300, None, 3, 1),                 # 69
+    ("Env 3 decaimiento (ms)", 400, 1, 20000, 1, 600, None, 3, 1),              # 70
+    ("Env 3 sostenido (%)", 0, 0, 100, 0.1, None, None, 1, 0),                  # 71
+    ("Env 3 relajacion (ms)", 300, 1, 20000, 1, 600, None, 3, 1),               # 72
+]
+for k in range(1, 7):                                                            # 73..90
+    SPEC2 += [(f"Mod {k} fuente", 0, 0, 7, 1, None, MSRC, 8, 0),
+              (f"Mod {k} destino", 0, 0, 8, 1, None, MDST, 8, 0),
+              (f"Mod {k} cantidad (%)", 0, -100, 100, 0.01, None, None, 1, 0)]
+SPEC2 += [
+    ("Velocidad a env 2 (%)", 0, 0, 100, 0.1, None, None, 1, 0),               # 91
+    ("Velocidad a env 3 (%)", 0, 0, 100, 0.1, None, None, 1, 0),               # 92
+    ("Velocidad a FM (%)", 0, 0, 100, 0.1, None, None, 1, 0),                  # 93
+    ("Curva de velocidad", 0, 0, 1, 1, None, "Nube,RS5k (dB)", 8, 0),          # 94
+    ("Volumen a velocidad minima (dB)", -72, -72, 0, 0.1, None, None, 6, 0),   # 95 (-72 = -inf, como RS5k)
+    ("Teclado a tiempos de env (%)", 0, -100, 100, 0.1, None, None, 1, 0),     # 96
+    ("Teclado a volumen (dB/oct)", 0, -12, 12, 0.1, None, None, 6, 0),         # 97
+    ("Disparo", 0, 0, 1, 1, None, "Normal,One-shot", 8, 0),                    # 98
+    ("Ganancia de salida (dB)", 0, 0, 24, 0.1, None, None, 6, 0),              # 99
+]
+FIRST2 = READOUT_SLIDER + 1
+LAST = FIRST2 + len(SPEC2) - 1
+ALL = list(enumerate(SPEC, 1)) + list(enumerate(SPEC2, FIRST2))
+
 
 def presets_enum():
     import re
@@ -97,13 +126,17 @@ def num(x):
 
 def sliders():
     out = []
-    for i, (name, d, mn, mx, st, lm, en, _, _) in enumerate(SPEC, 1):
+    def line(i, name, d, mn, mx, st, lm, en):
         shape = f":log={num(lm)}" if lm else ""
         enum = "{" + en + "}" if en else ""
-        out.append(f"slider{i}:{num(d)}<{num(mn)},{num(mx)},{num(st)}{shape}{enum}>-{name}")
+        return f"slider{i}:{num(d)}<{num(mn)},{num(mx)},{num(st)}{shape}{enum}>-{name}"
+    for i, (name, d, mn, mx, st, lm, en, _, _) in enumerate(SPEC, 1):
+        out.append(line(i, name, d, mn, mx, st, lm, en))
     pn = presets_enum()
     out.append(f"slider{PRESET_SLIDER}:0<0,{len(pn)},1{{-,{','.join(pn)}}}>-Cargar preset")
     out.append(f"slider{READOUT_SLIDER}:0<0,16,1>-Notas sonando (lectura)")
+    for i, (name, d, mn, mx, st, lm, en, _, _) in enumerate(SPEC2, FIRST2):
+        out.append(line(i, name, d, mn, mx, st, lm, en))
     return "\n".join(out)
 
 
@@ -113,31 +146,31 @@ def sset():
             return f"( slider{lo} = v; slider_automate(slider{lo}); )"
         mid = (lo + hi) // 2
         return f"i <= {mid} ? {tree(lo, mid)} : {tree(mid + 1, hi)}"
-    return f"function sset(i, v)\n(\n  {tree(1, PRESET_SLIDER)};\n);"
+    return f"function sset(i, v)\n(\n  {tree(1, LAST)};\n);"
 
 
 def ptable():
     out = ["function ptable_init()", "("]
-    for i, (_, d, mn, mx, st, lm, en, un, cu) in enumerate(SPEC, 1):
+    for i, (_, d, mn, mx, st, lm, en, un, cu) in ALL:
         out.append(f"  PMIN[{i}] = {num(mn)}; PMAX[{i}] = {num(mx)}; PDEF[{i}] = {num(d)}; PSTEP[{i}] = {num(st)}; PUNIT[{i}] = {un}; PCUR[{i}] = {cu};")
     out += [");"]
     return "\n".join(out)
 
 
 def defaults():
-    body = " ".join(f"sset({i}, {num(d)});" for i, (_, d, *_r) in enumerate(SPEC, 1))
+    body = " ".join(f"sset({i}, {num(d)});" for i, (_, d, *_r) in ALL)
     return f"function load_defaults()\n(\n  {body}\n);"
 
 
 def lua():
-    logp = ", ".join(f"[{i}] = {{{num(mn)}, {num(mx)}, {num(lm)}}}" for i, (_, d, mn, mx, st, lm, *_r) in enumerate(SPEC, 1) if lm)
-    return (f"-- generado por tools/build.py\nreturn {{ N = {N}, PRESET = {PRESET_SLIDER}, READOUT = {READOUT_SLIDER},\n"
+    logp = ", ".join(f"[{i}] = {{{num(mn)}, {num(mx)}, {num(lm)}}}" for i, (_, d, mn, mx, st, lm, *_r) in ALL if lm)
+    return (f"-- generado por tools/build.py\nreturn {{ N = {N}, LAST = {LAST}, PRESET = {PRESET_SLIDER}, READOUT = {READOUT_SLIDER},\n"
             f"  NPRESETS = {len(presets_enum())},\n  LOGP = {{{logp}}} }}\n")
 
 
 def main():
     gen = {"SLIDERS": sliders(), "SSET": sset(), "PTABLE": ptable(), "DEFAULTS": defaults(),
-           "CONSTS": f"NPARAMS = {N}; PRESET_SLIDER = {PRESET_SLIDER}; NPRESETS = {len(presets_enum())};"}
+           "CONSTS": f"NPARAMS = {LAST}; PRESET_SLIDER = {PRESET_SLIDER}; NPRESETS = {len(presets_enum())};"}
     out = []
     for line in SRC.read_text().splitlines():
         s = line.strip()
@@ -147,7 +180,7 @@ def main():
             out.append(line)
     DST.write_text("\n".join(out) + "\n")
     (ROOT / "tests/params_gen.lua").write_text(lua())
-    print(f"ok: {DST.name} ({len(out)} lineas, {N} parametros, {len(presets_enum())} presets)")
+    print(f"ok: {DST.name} ({len(out)} lineas, {N + len(SPEC2)} parametros, {len(presets_enum())} presets)")
 
 
 if __name__ == "__main__":

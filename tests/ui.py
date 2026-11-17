@@ -52,3 +52,14 @@ import math
 def node(cut, res): return (FGX + FGW * math.log(cut / 20) / math.log(1000), FDY + 18 + (FDH - 36) * (1 - res / 100))
 KB_Y = 546 + 50                 # parte baja de las teclas blancas
 def white(i): return (90 + 40.727 * (i + 0.5), KB_Y)
+# 1.1: páginas, página MOD (env 3, teclado, velocidad, matriz) y botones nuevos
+PAGE_SINTE, PAGE_MOD = (568, 22), (636, 22)
+E3_A = (122.67, KY1)
+MOD_SRC = lambda k: (22 + (k % 3) * 320.67 + 26 + 116.33, 360 + (k // 3) * 89 + 26.5)
+MOD_DST = lambda k: (22 + (k % 3) * 320.67 + 26 + 116.33, 360 + (k // 3) * 89 + 56.5)
+MOD_SRC_M = lambda k: (22 + (k % 3) * 320.67 + 26, 360 + (k // 3) * 89 + 39.5)
+MOD_DST_M = lambda k: (22 + (k % 3) * 320.67 + 26, 360 + (k // 3) * 89 + 69.5)
+MOD_AMT = lambda k: (22 + (k % 3) * 320.67 + 308.67 - 22, 360 + (k // 3) * 89 + 43.5)
+CURVE_MOD, CURVE_AMP, ONESHOT_BTN = (943, 239.5), (498, 345.5), (946, 345.5)
+GAIN = (952.25, KY3)
+AMP_VEL = (333.75 + 4 * 44, KY2)
