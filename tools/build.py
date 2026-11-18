@@ -113,11 +113,67 @@ LAST = FIRST2 + len(SPEC2) - 1
 ALL = list(enumerate(SPEC, 1)) + list(enumerate(SPEC2, FIRST2))
 
 
+def library():
+    """[(nombre, params finales, categoría, frase)]: src/presets.py + el ajuste de nivel de src/preset_levels.json."""
+    import importlib.util, json
+    spec = importlib.util.spec_from_file_location("presets", ROOT / "src/presets.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    lv = ROOT / "src/preset_levels.json"
+    trims = json.loads(lv.read_text()) if lv.exists() else {}
+    defs = {i: s[1] for i, s in ALL}
+    out = []
+    for nm, prm, cat, ph in m.flat():
+        assert "," not in nm and "{" not in nm and nm.isascii(), nm
+        prm = dict(prm)
+        for k in prm: assert k in defs and k != PRESET_SLIDER, (nm, k)
+        t = trims.get(nm, 0)
+        if t:
+            v = prm.get(66, 0) + t
+            if v > 12:                                   # lo que no entra en Volumen va a la ganancia de salida
+                prm[99] = round(prm.get(99, 0) + v - 12, 1); v = 12
+            prm[66] = round(max(-24, v), 1)
+        out.append((nm, prm, cat, ph))
+    return out
+
+
 def presets_enum():
-    import re
-    txt = SRC.read_text().split("function preset_name", 1)[1].split("function load_preset", 1)[0]
-    names = re.findall(r'^\s*n == (\d+) \? "([^"]+)"', txt, re.M)
-    return [nm for _, nm in sorted(names, key=lambda t: int(t[0]))]
+    return [nm for nm, *_ in library()]
+
+
+def tree(lo, hi, leaf, var="n"):
+    if lo == hi:
+        return leaf(lo)
+    mid = (lo + hi) // 2
+    return f"{var} <= {mid} ? {tree(lo, mid, leaf, var)} : {tree(mid + 1, hi, leaf, var)}"
+
+
+def presets_code():
+    lib = library(); n = len(lib)
+    def body(k):
+        nm, prm, *_ = lib[k - 1]
+        return "( " + " ".join(f"sset({i}, {num(v)});" for i, v in sorted(prm.items())) + " )" if prm else "0"
+    names = tree(1, n, lambda k: f'"{lib[k - 1][0]}"')
+    return (f"function preset_name(n)\n(\n  n < 1 || n > {n} ? \"\" : {names};\n);\n"
+            f"function load_preset(n)\n(\n  load_defaults();\n  (n >= 1 && n <= {n}) ? ( {tree(1, n, body)}; );\n"
+            f"  CUR_PRESET = n; upd = 1;\n);")
+
+
+def menu_code():
+    """Menú con un submenú por categoría; gfx_showmenu cuenta el título (#) como 1 y no cuenta los submenús."""
+    lib = library()
+    parts = ["#PRESETS DE NUBE SYNTH"]
+    cats = []
+    for nm, _, cat, _ in lib:
+        if cat and (not cats or cats[-1][0] != cat): cats.append((cat, []))
+        if cat: cats[-1][1].append(nm)
+    for cat, names in cats:
+        parts.append(">" + cat)
+        parts += names[:-1] + ["<" + names[-1]]
+    parts.append(lib[-1][0])
+    s = "|".join(parts)
+    return ("function menu_presets() local(r)\n(\n"
+            f'  #m = "{s}";\n'
+            "  gfx_x = dd_x; gfx_y = dd_y;\n  r = gfx_showmenu(#m);\n  r >= 2 ? load_preset(r - 1);\n);")
 
 
 def num(x):
@@ -164,12 +220,14 @@ def defaults():
 
 def lua():
     logp = ", ".join(f"[{i}] = {{{num(mn)}, {num(mx)}, {num(lm)}}}" for i, (_, d, mn, mx, st, lm, *_r) in ALL if lm)
+    ph = ", ".join(f'"{x[3]}"' for x in library())
     return (f"-- generado por tools/build.py\nreturn {{ N = {N}, LAST = {LAST}, PRESET = {PRESET_SLIDER}, READOUT = {READOUT_SLIDER},\n"
-            f"  NPRESETS = {len(presets_enum())},\n  LOGP = {{{logp}}} }}\n")
+            f"  NPRESETS = {len(presets_enum())},\n  PHRASE = {{{ph}}},\n  LOGP = {{{logp}}} }}\n")
 
 
 def main():
     gen = {"SLIDERS": sliders(), "SSET": sset(), "PTABLE": ptable(), "DEFAULTS": defaults(),
+           "PRESETS": presets_code(), "MENU": menu_code(),
            "CONSTS": f"NPARAMS = {LAST}; PRESET_SLIDER = {PRESET_SLIDER}; NPRESETS = {len(presets_enum())};"}
     out = []
     for line in SRC.read_text().splitlines():

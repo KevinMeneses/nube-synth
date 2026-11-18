@@ -1,4 +1,4 @@
-"""Compara renders de los 22 presets y de los parches de "Nube baja" muestra por muestra.
+"""Compara renders de los parches de "Nube baja" (y de presets, si los hay) muestra por muestra.
 - compat.py REF OTRA: tests/compat.sh (1.0 y actual, las dos con el azar sembrado). Cada caso debe ser idéntico; se acepta
   una diferencia menor que el bit menos significativo de 16 bits (-96 dBFS), porque esa variación mínima aparece también
   entre dos renders de la MISMA 1.0 (presets con LFO al corte). Se informan por separado.

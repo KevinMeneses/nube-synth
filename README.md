@@ -6,9 +6,11 @@ A free polyphonic synthesizer (instrument) for [REAPER](https://www.reaper.fm), 
 
 ![Nube Synth](docs/captura.png)
 
-2 anti-aliased oscillators (4-point polyBLEP) with up to 7-voice unison, sub, noise and FM; 24/12 dB low-pass, band-pass and high-pass filter with resonance and drive; amp + 2 mod envelopes; 2 tempo-syncable LFOs with 7 destinations; a 6-slot modulation matrix (Env 2/3, LFOs, velocity, keyboard, mod wheel → pitch, cutoff, FM, per-oscillator level, pulse width, pan, volume); keyboard → envelope times and volume, velocity → FM and envelope amounts, an RS5k-style velocity curve, one-shot mode and up to +24 dB output gain; poly / mono / legato with glide (808 slides), pitch bend, mod wheel, sustain pedal; distortion, Juno-style chorus, ping-pong delay and reverb; on-screen keyboard and 22 level-matched presets.
+2 anti-aliased oscillators (4-point polyBLEP) with up to 7-voice unison, sub, noise and FM; 24/12 dB low-pass, band-pass and high-pass filter with resonance and drive; amp + 2 mod envelopes; 2 tempo-syncable LFOs with 7 destinations; a 6-slot modulation matrix (Env 2/3, LFOs, velocity, keyboard, mod wheel → pitch, cutoff, FM, per-oscillator level, pulse width, pan, volume); keyboard → envelope times and volume, velocity → FM and envelope amounts, an RS5k-style velocity curve, one-shot mode and up to +24 dB output gain; poly / mono / legato with glide (808 slides), pitch bend, mod wheel, sustain pedal; distortion, Juno-style chorus, ping-pong delay and reverb; on-screen keyboard and a library of 119 level-matched presets.
 
-**1.1** adds the modulation page without changing anything that was there: every 1.0 slider keeps its number and meaning (the new ones come after them), and the 22 presets and existing projects render identical to 1.0, sample by sample (`tests/compat.sh`).
+**1.2** brings the preset library: 119 sounds in 11 categories (808 and sub, basses, plucks, keys, pads, strings and winds, leads, bells and mallets, arps, textures, FX), all at the same loudness, with previous / next buttons. Existing projects still render identical to 1.0, sample by sample (`tests/compat.sh`).
+
+**1.1** added the modulation page without changing anything that was there: every 1.0 slider keeps its number and meaning (the new ones come after them).
 
 **Install** — with [ReaPack](https://reapack.com): *Extensions → ReaPack → Import repositories*, paste
 `https://github.com/KevinMeneses/nube-plugins/raw/main/index.xml`, then install **Nube Synth**. Or copy `nube_synth.jsfx`
@@ -55,11 +57,15 @@ Nube Delay y los demás Nube.
 - **Efectos**: distorsión, chorus tipo Juno, delay ping-pong a tempo, reverb (FDN de 8 líneas), volumen.
 - **Interfaz**: dos páginas (SINTE y MOD), osciloscopio, curva del filtro arrastrable (corte / resonancia) con el corte en vivo, envolventes,
   medidor, **teclado en pantalla** (más abajo en la tecla = más fuerte), ayuda de cada control en el pie.
-- **22 presets** con volumen igualado: bajos (808 con glide, 808 sucio, sub, Reese, Moog), plucks, keys (Rhodes FM,
-  órgano), pads (supersaw, Juno, oscuro), cuerdas, metales, leads, arp y riser.
+- **Biblioteca de 119 presets** (1.2) en 11 categorías, con menú por categoría y botones anterior / siguiente: 808 y
+  sub (13: glide, drill, slide UK, rage, Detroit, lo-fi...), bajos (12: Reese, Moog, acid, wobble, FM, Juno...), plucks
+  (10), keys (12: Rhodes, Wurli, piano DX, clavinet, órganos...), pads (15), cuerdas y vientos (11), leads (15),
+  campanas y mallets (9), arps y secuencias (7), texturas (6) y FX (8: risers, impacto, láser...). Incluye los sonidos
+  de "Nube baja" (808, coro aah, silbidos, kalimba). Todos a −18 LUFS con la frase de prueba (los muy percusivos
+  quedan más bajos para no pasar de −3 dBFS de pico). Los presets viven en `src/presets.py`.
 - Sin latencia. CPU: ver "Pruebas".
 - **Compatible con la 1.0**: los sliders 1–68 no cambiaron de número ni de significado (lo nuevo va del 69 al 99) y
-  todo lo nuevo viene apagado: los proyectos y los 22 presets suenan idénticos, muestra por muestra.
+  todo lo nuevo viene apagado: los proyectos suenan idénticos, muestra por muestra.
 
 ## Instalar
 
@@ -74,7 +80,8 @@ Crea un enlace en `~/Library/Application Support/REAPER/Effects/Nube Synth/`. En
 
 Editar `src/nube_synth.template.jsfx` y correr `python3 tools/build.py`: la tabla `SPEC` de `build.py` genera los sliders,
 `sset()`, la tabla de la interfaz y los valores por defecto (y `tests/params_gen.lua`); `SPEC` son los sliders 1–66 de la
-1.0 y `SPEC2` los nuevos (69 en adelante; 67 = Cargar preset y 68 = lectura no se mueven). **EEL2 no distingue
+1.0 y `SPEC2` los nuevos (69 en adelante; 67 = Cargar preset y 68 = lectura no se mueven). Los presets están en
+`src/presets.py` (nombre, categoría y valores con nombres cortos); `build.py` genera `load_preset()`, el menú y la lista. **EEL2 no distingue
 mayúsculas**: `dlp` y `DLP` son la misma variable; `python3 tools/check_names.py` busca choques.
 
 ## Pruebas
@@ -84,17 +91,19 @@ mayúsculas**: `dlp` y `DLP` son la misma variable; `python3 tools/check_names.p
   (±0.15 dB contra la bilineal), resonancia, teclado, envolventes (tiempos y niveles), velocidad, poly / robo de voces,
   mono / legato / glide (a la mitad a los 100 ms), reataque, pitch bend, vibrato, pedal, unísono (cada copia en su
   afinación), sub, ruido, FM (bandas = Bessel J1/J0, J2/J0), env 2 a tono, LFO (velocidad, a tempo, profundidad,
-  paneo), efectos (eco a la muestra, ping-pong, RT60 de la reverb), volumen, inicio exacto de la nota y los 22 presets.
+  paneo), efectos (eco a la muestra, ping-pong, RT60 de la reverb), volumen, inicio exacto de la nota y los 119 presets (pico y nivel, cada uno con una frase según su categoría).
   1.1 (48 chequeos): Env 3 a nivel del osc 1 (20/50/80 % del ataque, ±0.01) con el osc 2 entero desde el golpe, cada
   destino de la matriz (tono, corte armónico por armónico, FM = Bessel, paneo −7.66 dB, ancho de pulso, tono del osc 2,
   volumen negativo, LFO, teclado 1 oct/oct), golpe de FM de 50 ms con el filtro de Env 3 aún abierto a los 300 ms,
   teclado a tiempos (−40 dB justo a la mitad del tiempo) y a volumen (±6.00 dB), one-shot (nota corta = nota larga
   muestra por muestra), curva RS5k (−5.49 dB a vel 64 con −24; −42.01 dB a vel 2 con −inf), velocidad a env 2/3/FM y
   ganancia de salida. Si existe `tests/out/ref_1.0` (renders de la 1.0) compara además los casos sin azar.
-- `tests/compat.sh`: compatibilidad con la 1.0. Renderiza los 22 presets y los 5 parches de Nube Synth de la mezcla
-  "Nube baja" con la 1.0 y con la versión actual, las dos con el azar sembrado (`tests/seeded.py`), y exige que salgan
-  iguales: 24 idénticos muestra por muestra y 3 con diferencias de −101 a −139 dBFS, del mismo tamaño que entre dos
-  renders de la misma 1.0.
+- `tests/compat.sh`: compatibilidad con la 1.0. Renderiza los 5 parches de Nube Synth de la mezcla "Nube baja" con la
+  1.0 y con la versión actual, las dos con el azar sembrado (`tests/seeded.py`), y exige que salgan iguales: los 5
+  idénticos muestra por muestra (1.2). Hasta la 1.1 comparaba también los 22 presets de entonces (24 idénticos y 3 con
+  diferencias de −101 a −139 dBFS); desde la 1.2 la biblioteca cambió de orden y de volumen a propósito.
+- `tools/level_presets.py`: empareja el volumen de la biblioteca (LUFS de cada preset renderizado, ajuste guardado en
+  `src/preset_levels.json`; se corre después de `tests/run.sh preset`, reconstruye y se repite hasta que quede parejo).
 - `tests/ui_test.py`: 30 pruebas con el mouse (requiere `tests/reopen.sh`): iconos de onda, arrastrar y doble clic en
   perillas, arrastrar el punto del filtro, rueda, menús (modo, destino del LFO, presets con submenú), teclado en pantalla;
   1.1: páginas SINTE / MOD, menús de fuente y destino de la matriz, cantidad, Env 3, curva RS5k, one-shot, ganancia.
