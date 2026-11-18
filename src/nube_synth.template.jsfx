@@ -2,7 +2,7 @@ desc:Nube Synth - sintetizador (2 osc con unisono, sub, ruido, FM, filtro, 3 env
 //tags: synth instrument polysynth subtractive supersaw 808 pad pluck lead fm modulation-matrix
 //author: Kev Meneses + Claude (Claude Code)
 //license: GPL-3.0-or-later
-//version: 1.1.0
+//version: 1.2.0
 
 //@GEN:SLIDERS@
 
@@ -488,86 +488,8 @@ function rdb(buf, n, w, d) local(r, i, f, i0, i2, i3, x0, x1, x2, x3, c1, c2, c3
 function apf(x, b, n, g) local(i, d, y)
 ( i = b[0]; d = b[1 + i]; y = d - g * x; b[1 + i] = x + g * y; (i += 1) >= n ? i = 0; b[0] = i; y; );
 
-// ---------------------------------------------------------------- presets
-function preset_name(n)
-(
-  n == 1 ? "Bajo - 808 con glide" :
-  n == 2 ? "Bajo - 808 sucio" :
-  n == 3 ? "Bajo - Sub limpio" :
-  n == 4 ? "Bajo - Reese" :
-  n == 5 ? "Bajo - Moog" :
-  n == 6 ? "Pluck - Brillante" :
-  n == 7 ? "Pluck - Suave (chill)" :
-  n == 8 ? "Pluck - Kalimba (FM)" :
-  n == 9 ? "Keys - Rhodes (FM)" :
-  n == 10 ? "Keys - Organo suave" :
-  n == 11 ? "Pad - Nube (supersaw)" :
-  n == 12 ? "Pad - Calido (Juno)" :
-  n == 13 ? "Pad - Oscuro (cine)" :
-  n == 14 ? "Cuerdas - Strings" :
-  n == 15 ? "Metales - Brass" :
-  n == 16 ? "Lead - Sierra (rap melodico)" :
-  n == 17 ? "Lead - Silbido" :
-  n == 18 ? "Lead - Cuadrada retro" :
-  n == 19 ? "Lead - Flauta suave" :
-  n == 20 ? "Arp - Pluck corto" :
-  n == 21 ? "FX - Riser de ruido" :
-  n == 22 ? "Por defecto" : "";
-);
-function load_preset(n)
-(
-  load_defaults();
-  n == 1 ? ( sset(1, 2); sset(3, 70); sset(5, 0); sset(9, 100); sset(27, 4); sset(34, 1); sset(35, 1800); sset(36, 35); sset(37, 180);
-             sset(38, 30); sset(40, 45); sset(43, 12); sset(58, 25); sset(66, -1); ) :
-  n == 2 ? ( sset(1, 2); sset(3, 70); sset(5, 0); sset(9, 100); sset(27, 0); sset(28, 2500); sset(34, 1); sset(35, 2000); sset(36, 40);
-             sset(37, 180); sset(38, 30); sset(40, 40); sset(43, 12); sset(58, 60); sset(66, -2); ) :
-  n == 3 ? ( sset(1, 2); sset(5, 0); sset(9, 100); sset(27, 4); sset(34, 2); sset(36, 100); sset(37, 120); sset(38, 20);  sset(66, -1);) :
-  n == 4 ? ( sset(1, 1); sset(3, 40); sset(9, 70); sset(11, 3); sset(12, 20); sset(17, 60); sset(16, -12); sset(26, 40);
-             sset(28, 450); sset(29, 15); sset(30, 6); sset(34, 5); sset(37, 150); sset(53, 1); sset(51, 0.3); sset(54, 25); sset(66, 4); ) :
-  n == 5 ? ( sset(1, 1); sset(3, 30); sset(9, 70); sset(13, 3); sset(14, -1); sset(16, 0); sset(17, 60); sset(28, 220); sset(29, 35);
-             sset(31, 45); sset(40, 250); sset(35, 600); sset(36, 60); sset(37, 150); sset(66, 1.5); ) :
-  n == 6 ? ( sset(11, 3); sset(12, 18); sset(9, 70); sset(13, 3); sset(18, 35); sset(14, 1); sset(17, 40); sset(28, 350); sset(29, 20);
-             sset(31, 55); sset(40, 280); sset(42, 250); sset(34, 1); sset(35, 600); sset(36, 0); sset(37, 350);
-             sset(61, 18); sset(62, 3); sset(63, 30); sset(64, 18); sset(65, 1.8); sset(66, -0.5); ) :
-  n == 7 ? ( sset(5, 1); sset(9, 90); sset(13, 0); sset(14, 1); sset(16, 0); sset(17, 40); sset(27, 1); sset(28, 900); sset(29, 10);
-             sset(31, 35); sset(40, 400); sset(34, 2); sset(35, 900); sset(36, 0); sset(37, 500);
-             sset(59, 30); sset(61, 12); sset(64, 30); sset(65, 2.5);  sset(66, 2);) :
-  n == 8 ? ( sset(5, 0); sset(9, 100); sset(13, 0); sset(14, 2); sset(16, 0); sset(17, 0); sset(25, 45); sset(27, 4); sset(39, 0.5);
-             sset(40, 120); sset(34, 0.5); sset(35, 1200); sset(36, 0); sset(37, 600); sset(64, 25); sset(65, 2);  sset(66, -1);) :
-  n == 9 ? ( sset(5, 0); sset(9, 100); sset(13, 0); sset(16, 0); sset(17, 0); sset(24, 8); sset(25, 35); sset(27, 1); sset(28, 6000);
-             sset(40, 700); sset(42, 300); sset(34, 1); sset(35, 3500); sset(36, 20); sset(37, 450); sset(38, 70);
-             sset(44, 0); sset(45, 4); sset(47, 2); sset(48, 18); sset(59, 20); sset(64, 20); sset(65, 1.5); sset(66, -1); ) :
-  n == 10 ? ( sset(5, 0); sset(9, 80); sset(13, 0); sset(14, 1); sset(16, 0); sset(17, 45); sset(21, 30); sset(27, 4);
-              sset(34, 6); sset(36, 100); sset(37, 120); sset(59, 35); sset(60, 4); sset(64, 20); sset(66, -4.5); ) :
-  n == 11 ? ( sset(11, 7); sset(12, 30); sset(9, 70); sset(17, 35); sset(14, 1); sset(19, 5); sset(20, 20); sset(26, 100);
-              sset(28, 2200); sset(29, 10); sset(32, 30); sset(34, 900); sset(35, 1000); sset(36, 85); sset(37, 1800);
-              sset(51, 0.15); sset(54, 12); sset(59, 35); sset(64, 45); sset(65, 4); sset(66, -0.5); ) :
-  n == 12 ? ( sset(5, 3); sset(10, 45); sset(9, 70); sset(17, 60); sset(16, 6); sset(21, 30); sset(28, 2000); sset(29, 15);
-              sset(44, 1); sset(45, 0.4); sset(47, 3); sset(48, 40); sset(34, 400); sset(36, 90); sset(37, 1200);
-              sset(59, 70); sset(60, 0.5); sset(64, 30); sset(66, -4); ) :
-  n == 13 ? ( sset(11, 5); sset(12, 25); sset(9, 70); sset(17, 50); sset(14, -1); sset(28, 600); sset(29, 25);
-              sset(51, 0.08); sset(54, 30); sset(34, 1500); sset(36, 100); sset(37, 2500);
-              sset(61, 15); sset(62, 5); sset(64, 55); sset(65, 6); sset(66, 1); ) :
-  n == 14 ? ( sset(11, 5); sset(12, 22); sset(9, 70); sset(17, 60); sset(16, -8); sset(19, 3); sset(27, 1); sset(28, 4500);
-              sset(45, 5); sset(48, 1.2); sset(34, 350); sset(35, 500); sset(36, 90); sset(37, 700);
-              sset(59, 30); sset(64, 35); sset(65, 3); sset(66, -3); ) :
-  n == 15 ? ( sset(11, 2); sset(12, 10); sset(9, 70); sset(17, 80); sset(16, 8); sset(28, 700); sset(29, 15); sset(31, 40);
-              sset(33, 40); sset(39, 60); sset(40, 500); sset(41, 50); sset(34, 25); sset(36, 90); sset(37, 200);
-              sset(64, 20); sset(66, -4); ) :
-  n == 16 ? ( sset(1, 2); sset(3, 60); sset(11, 2); sset(12, 12); sset(9, 70); sset(13, 3); sset(14, -1); sset(17, 40);
-              sset(28, 3500); sset(29, 10); sset(37, 200); sset(61, 20); sset(62, 5); sset(64, 20); sset(66, 0); ) :
-  n == 17 ? ( sset(1, 2); sset(3, 90); sset(5, 0); sset(9, 100); sset(23, 6); sset(27, 1); sset(28, 5000);
-              sset(45, 5.5); sset(48, 2); sset(34, 40); sset(37, 150); sset(61, 15); sset(62, 5); sset(64, 35); sset(65, 2.5);  sset(66, -2.5);) :
-  n == 18 ? ( sset(1, 1); sset(3, 40); sset(5, 3); sset(9, 70); sset(13, 3); sset(18, 25); sset(14, 1); sset(16, 5); sset(17, 40);
-              sset(27, 1); sset(28, 5000); sset(37, 80); sset(61, 15); sset(62, 2); sset(66, -3); ) :
-  n == 19 ? ( sset(1, 2); sset(3, 50); sset(5, 1); sset(9, 100); sset(23, 4); sset(27, 1); sset(28, 3000);
-              sset(45, 5); sset(48, 1.5); sset(34, 60); sset(37, 200); sset(64, 30); sset(65, 2.5); ) :
-  n == 20 ? ( sset(5, 3); sset(10, 30); sset(9, 80); sset(28, 600); sset(31, 50); sset(40, 120); sset(34, 0.5); sset(35, 200);
-              sset(36, 0); sset(37, 120); sset(61, 25); sset(62, 0); sset(64, 15); sset(66, -2.5); ) :
-  n == 21 ? ( sset(9, 0); sset(23, 100); sset(28, 300); sset(29, 40); sset(31, 80); sset(39, 6000); sset(41, 100);
-              sset(34, 4000); sset(36, 100); sset(37, 1500); sset(61, 20); sset(64, 50); sset(65, 5); sset(66, 2); );
-  CUR_PRESET = n; upd = 1;
-);
+// ---------------------------------------------------------------- presets (src/presets.py)
+//@GEN:PRESETS@
 
 ptable_init();
 update_params();
@@ -912,7 +834,8 @@ function hint_for(id)
   id == 221 ? strcpy(#hint, "One-shot: ignora el note-off; la nota se suelta sola al terminar el decaimiento del Amp (kalimba, golpes).") :
   id == 222 ? strcpy(#hint, "Curva de velocidad: Nube (potencia, perilla en %) o RS5k (perilla = volumen a velocidad minima, en dB).") :
   (id == 302 || id == 303) ? strcpy(#hint, "Paginas: SINTE (osciladores, filtro, envolventes, LFO, efectos) y MOD (env 3, teclado, velocidad, matriz).") :
-  id == 300 ? strcpy(#hint, "Presets: bajos (808, Reese, Moog), plucks, keys, pads, cuerdas, leads y FX. Guarda los tuyos con el + de REAPER.") :
+  id == 300 ? strcpy(#hint, "Biblioteca de presets: 808, bajos, plucks, keys, pads, cuerdas y vientos, leads, campanas, arps, texturas y FX. Guarda los tuyos con el + de REAPER.") :
+  (id == 304 || id == 305) ? strcpy(#hint, "Preset anterior / siguiente de la biblioteca.") :
   id == 301 ? strcpy(#hint, "Modo: Poly (acordes), Mono (una nota, glide siempre) o Legato (glide solo si las notas se pisan, sin reatacar).") :
   id == 400 ? strcpy(#hint, "Osciloscopio: la onda que esta saliendo ahora.") :
   id == 401 ? strcpy(#hint, "Filtro: arrastra el punto (horizontal = corte, vertical = resonancia). La linea fina es el corte en vivo.") :
@@ -923,20 +846,7 @@ function hint_for(id)
   strcpy(#hint, "Nube Synth: elige un preset y toca (MIDI o el teclado de abajo). Pasa el mouse sobre cualquier cosa para ver que hace.");
 );
 
-function menu_presets() local(r, i)
-(
-  #m = "#PRESETS DE NUBE SYNTH|>Bajos";
-  i = 1; loop(5, strcat(#m, i == 5 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|>Plucks"); loop(3, strcat(#m, i == 8 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|>Keys"); loop(2, strcat(#m, i == 10 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|>Pads y cuerdas"); loop(5, strcat(#m, i == 15 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|>Leads"); loop(4, strcat(#m, i == 19 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|>Arp y FX"); loop(2, strcat(#m, i == 21 ? "|<" : "|"); strcat(#m, preset_name(i)); i += 1; );
-  strcat(#m, "|"); strcat(#m, preset_name(22));
-  gfx_x = dd_x; gfx_y = dd_y;
-  r = gfx_showmenu(#m);
-  r >= 2 ? load_preset(r - 1);
-);
+//@GEN:MENU@
 function menu_list(s, n, cur) local(r, i)
 (
   #m = ""; i = 0;
@@ -995,6 +905,8 @@ lb && !last_lb ? (
   hover_id == 264 ? ( sset(49, !slider49); upd = 1; ) :
   hover_id == 265 ? ( sset(55, !slider55); upd = 1; ) :
   hover_id == 300 ? menu_presets() :
+  hover_id == 304 ? load_preset(CUR_PRESET <= 1 ? NPRESETS : CUR_PRESET - 1) :
+  hover_id == 305 ? load_preset(CUR_PRESET >= NPRESETS ? 1 : CUR_PRESET + 1) :
   hover_id == 302 ? PAGE = 0 : hover_id == 303 ? PAGE = 1 :
   hover_id == 221 ? ( sset(98, !slider98); upd = 1; ) :
   hover_id == 222 ? ( sset(94, !slider94); upd = 1; ) :
@@ -1044,7 +956,8 @@ gfx_measurestr("NUBE ", _tw, _th);
 gfx_set(0.93, 0.94, 0.97, 1); text_l("SYNTH", 14 * SC + _tw, 0, TOPH);
 _x = 130 * SC; _y = 9 * SC; _h = 26 * SC;
 CUR_PRESET > 0 ? strcpy(#s, preset_name(CUR_PRESET)) : strcpy(#s, "Presets");
-dropdown(300, _x, _y, 250 * SC, _h, "", #s); _x += 258 * SC;
+dropdown(300, _x, _y, 194 * SC, _h, "", #s);
+button(304, _x + 198 * SC, _y, 24 * SC, _h, "<", 0); button(305, _x + 226 * SC, _y, 24 * SC, _h, ">", 0); _x += 258 * SC;
 dropdown(301, _x, _y, 140 * SC, _h, "Modo", mode_name(slider1)); _x += 148 * SC;
 button(302, _x, _y, 64 * SC, _h, "SINTE", PAGE == 0); button(303, _x + 68 * SC, _y, 64 * SC, _h, "MOD", PAGE == 1);
 fnt(2); gfx_set(0.55, 0.58, 0.65, 1);

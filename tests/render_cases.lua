@@ -119,9 +119,15 @@ local CASES = {
 }
 for _, c in ipairs(CASES) do if c[1] == "stress" then for k = 0, 23 do table.insert(c[2], N(0.05 + k * 0.06, 0.05 + k * 0.06 + 0.3, 48 + (k * 7) % 24)) end end end
 -- cada preset con una frase: bajo, acorde, y dos notas pisadas (glide en los modos mono)
-local PHRASE = {N(0.0, 0.6, 45, 100), N(0.7, 1.7, 57, 100), N(0.7, 1.7, 60, 100), N(0.7, 1.7, 64, 100), N(1.8, 2.25, 69, 100), N(2.2, 2.7, 72, 100)}
-local LONG = {N(0.0, 4.0, 60, 100)}   -- el riser necesita una nota larga
-for p = 1, P.NPRESETS do CASES[#CASES + 1] = {"preset" .. p, p == 21 and LONG or PHRASE, {[P.PRESET] = p}, 5} end
+-- (la frase depende de la categoría del preset: P.PHRASE, de src/presets.py)
+local PH = {
+  acorde = {N(0.0, 0.6, 45, 100), N(0.7, 1.7, 57, 100), N(0.7, 1.7, 60, 100), N(0.7, 1.7, 64, 100), N(1.8, 2.25, 69, 100), N(2.2, 2.7, 72, 100)},
+  bajo = {N(0.0, 0.8, 36, 110), N(0.9, 1.6, 36, 90), N(1.7, 2.4, 43, 110), N(2.3, 3.0, 41, 100)},
+  pad = {N(0.0, 3.0, 57, 90), N(0.0, 3.0, 60, 90), N(0.0, 3.0, 64, 90), N(0.0, 3.0, 67, 90)},
+  lead = {N(0.0, 0.5, 69, 100), N(0.45, 1.0, 72, 100), N(0.95, 1.5, 74, 100), N(1.6, 2.4, 72, 100), N(2.5, 3.0, 67, 100)},
+  largo = {N(0.0, 4.0, 60, 100)},
+}
+for p = 1, P.NPRESETS do CASES[#CASES + 1] = {"preset" .. p, PH[P.PHRASE[p]], {[P.PRESET] = p}, 5} end
 -- compatibilidad: los parches de Nube Synth de la mezcla "Nube baja" (sliders 1-66 tal como están guardados en el proyecto)
 local NB = {
   nb_808 = "1 8 0 2 0 0 0 0 100 50 1 25 2 0 0 7 0 50 1 25 0 0 0 0 0 70 4 6000 0 0 0 0 0 1 4000 0 30 0 0.5 60 0 300 2 0 5 0 0 0 0 1 0.5 0 1 0 0 40 0 42 0 0.6 0 3 35 0 2 7.5",
